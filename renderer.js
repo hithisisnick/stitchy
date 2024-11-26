@@ -17,6 +17,9 @@ class Reto3DProcessor {
 		this.setupFrameEditor();
 		this.cropper = null;
 
+		// Initially hide the content
+		this.hideImageContent();
+
 		// Add save button listeners
 		document.getElementById('saveButton').addEventListener('click', () => {
 			this.saveGif(false);
@@ -122,6 +125,15 @@ class Reto3DProcessor {
 		}
 	}
 
+	// Add these methods to control visibility
+	showImageContent() {
+		document.getElementById('imageContent').classList.remove('hidden');
+	}
+
+	hideImageContent() {
+		document.getElementById('imageContent').classList.add('hidden');
+	}
+
 	async handleImageFile(file) {
 		try {
 			console.log('Processing file:', file.name);
@@ -134,6 +146,9 @@ class Reto3DProcessor {
 			// Process image through main process
 			const result = await window.electronAPI.processImage(buffer);
 
+			// Show the content section
+			this.showImageContent();
+
 			// Display original image
 			this.displayDataUrl('originalImage', result.originalBuffer);
 
@@ -145,6 +160,7 @@ class Reto3DProcessor {
 		} catch (error) {
 			console.error('Error processing image:', error);
 			alert(`Error processing image: ${error.message}`);
+			this.hideImageContent();
 		}
 	}
 
@@ -432,12 +448,16 @@ class Reto3DProcessor {
 				this.frames.push(processedBuffer);
 			}
 
+			// Show the content section
+			this.showImageContent();
+
 			// Display the frames
 			await this.displayFrames();
 			document.getElementById('processButton').disabled = false;
 		} catch (error) {
 			console.error('Error processing custom frames:', error);
 			alert(`Error processing custom frames: ${error.message}`);
+			this.hideImageContent();
 		}
 	}
 }
