@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>3D GIF Creator</title>
+		<link rel="stylesheet" href="styles/output.css" />
+		<link rel="stylesheet" href="node_modules/cropperjs/dist/cropper.css" />
+	</head>
+	<body class="bg-gray-100 min-h-screen p-8">
+		<div class="container mx-auto max-w-6xl">
+			<h1 class="text-3xl font-bold text-center mb-8">3D GIF Creator</h1>
+
+			<div class="bg-white rounded-xl shadow-lg p-6">
+				<div class="upload-section">
+					<div id="dropZone" class="drop-zone">
+						<p class="text-gray-500">Drop your scan here or</p>
+						<button
+							id="selectButton"
+							class="mt-2 text-blue-500 hover:text-blue-600">
+							Select File
+						</button>
+						<input
+							type="file"
+							id="fileInput"
+							accept="image/jpeg,image/png"
+							hidden />
+					</div>
+				</div>
+
+				<div class="preview-section">
+					<div id="originalPreview" class="preview-container">
+						<h3 class="text-xl font-semibold mb-4">Original Image</h3>
+						<img id="originalImage" class="preview-image" />
+					</div>
+					<div id="framesPreview" class="frames-container">
+						<h3 class="text-xl font-semibold mb-4">Detected Frames</h3>
+						<div id="frameImages" class="frame-images"></div>
+						<div class="frame-controls mt-4 flex gap-4">
+							<button id="editFramesButton" class="flex-1">
+								Edit Frames
+							</button>
+							<button id="saveFramesButton" class="flex-1">
+								Save Frames
+							</button>
+						</div>
+						<div id="frameEditor" class="frame-editor" style="display: none">
+							<div class="editor-container">
+								<div class="crop-container">
+									<!-- Cropper.js will handle the content -->
+								</div>
+								<div class="editor-controls">
+									<button id="applyEdits" class="px-6">Apply</button>
+									<button id="resetCrop" class="px-6">Reset</button>
+									<button id="cancelEdits" class="px-6">Cancel</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="controls">
+					<button id="processButton" disabled>
+						Create GIF from Detected Frames
+					</button>
+					<button id="uploadFramesButton">Upload Custom Frames</button>
+					<input
+						type="file"
+						id="frameUploadInput"
+						accept="image/*"
+						multiple
+						hidden />
+					<div class="settings">
+						<label>
+							Frame Delay (ms):
+							<input
+								type="number"
+								id="frameDelay"
+								value="150"
+								min="100"
+								max="500"
+								class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+						</label>
+					</div>
+				</div>
+
+				<div id="output" class="output-section">
+					<h3 class="text-xl font-semibold mb-4">Output GIF</h3>
+					<img id="outputGif" class="max-w-full h-auto rounded-lg shadow-md" />
+					<div class="save-buttons">
+						<button id="saveButton">Save</button>
+						<button id="saveAsButton">Save As...</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			window.addEventListener('DOMContentLoaded', () => {
+				console.log('electronAPI available:', !!window.electronAPI);
+				console.log('Cropper available:', !!window.Cropper);
+			});
+		</script>
+		<script src="renderer.js"></script>
+	</body>
+</html>

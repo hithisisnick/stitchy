@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles that need to be preserved */
+.drop-zone {
+	@apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-colors;
+}
+
+.drop-zone:hover {
+	@apply border-blue-500 bg-blue-50;
+}
+
+.drag-over {
+	@apply border-blue-500 bg-blue-100;
+}
+
+.preview-container {
+	@apply mt-8 max-w-full overflow-hidden;
+}
+
+.preview-image {
+	@apply w-full h-auto rounded-lg shadow-md object-contain max-h-[50vh];
+}
+
+.frames-container {
+	@apply mt-8;
+}
+
+.frame-images {
+	@apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4;
+}
+
+.frame-container {
+	@apply relative;
+}
+
+.frame-container img {
+	@apply w-full h-auto rounded-lg shadow-sm object-contain max-h-[30vh];
+}
+
+.frame-container button {
+	@apply mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors;
+}
+
+.frame-editor {
+	@apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.editor-container {
+	@apply bg-white p-4 rounded-lg w-[95vw] md:w-[90vw] lg:w-[80vw] max-h-[90vh] overflow-auto mx-auto;
+}
+
+.crop-container {
+	@apply relative w-full max-h-[70vh] overflow-hidden mb-4;
+}
+
+.crop-container img {
+	@apply max-h-[65vh] object-contain mx-auto;
+}
+
+.cropper-container {
+	@apply max-h-[65vh] !important;
+}
+
+.editor-controls {
+	@apply flex gap-2 justify-end;
+}
+
+.editor-controls button {
+	@apply px-4 py-2 rounded transition-colors;
+}
+
+#applyEdits {
+	@apply bg-green-500 text-white hover:bg-green-600;
+}
+
+#resetCrop {
+	@apply bg-yellow-500 text-white hover:bg-yellow-600;
+}
+
+#cancelEdits {
+	@apply bg-red-500 text-white hover:bg-red-600;
+}
+
+.controls {
+	@apply mt-8 space-y-4;
+}
+
+.controls button {
+	@apply w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.settings {
+	@apply mt-4;
+}
+
+.settings label {
+	@apply block text-sm font-medium text-gray-700;
+}
+
+.settings input {
+	@apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
+}
+
+.output-section {
+	@apply mt-8;
+}
+
+.save-buttons {
+	@apply mt-4 flex gap-4;
+}
+
+.save-buttons button {
+	@apply flex-1 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors;
+}
