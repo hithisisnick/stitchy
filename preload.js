@@ -6,8 +6,15 @@ const electronAPI = {
 	processImage: (imageBuffer) => ipcRenderer.invoke('process-image', imageBuffer),
 	processCustomFrame: (buffer) => ipcRenderer.invoke('process-custom-frame', buffer),
 	createGif: (frames, options) => ipcRenderer.invoke('create-gif', frames, options),
-	saveGif: (buffer, defaultFilename, saveAs, originalPath) =>
-		ipcRenderer.invoke('save-gif', buffer, defaultFilename, saveAs, originalPath),
+	saveGif: async (buffer, defaultFilename, saveAs, originalPath) => {
+		return await ipcRenderer.invoke(
+			'save-gif',
+			buffer,
+			defaultFilename,
+			saveAs,
+			originalPath
+		);
+	},
 	saveFrames: (frames) => ipcRenderer.invoke('save-frames', frames),
 	editFrame: (frameBuffer, edits) =>
 		ipcRenderer.invoke('edit-frame', frameBuffer, edits),

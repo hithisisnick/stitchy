@@ -20,28 +20,74 @@ class Reto3DProcessor {
 		// Initially hide the content
 		this.hideImageContent();
 
-		// Add save button listeners
+		// Initially hide the save buttons
+		document.querySelector('.output-section').classList.add('hidden');
+
+		const saveDropdownButton = document.getElementById('saveDropdownButton');
+		const saveDropdownMenu = document.getElementById('saveDropdownMenu');
+
+		saveDropdownButton.addEventListener('click', () => {
+			saveDropdownMenu.classList.toggle('hidden');
+		});
+
+		// Close dropdown when clicking outside
+		document.addEventListener('click', (event) => {
+			if (
+				!saveDropdownButton.contains(event.target) &&
+				!saveDropdownMenu.contains(event.target)
+			) {
+				saveDropdownMenu.classList.add('hidden');
+			}
+		});
+
+		// Save button listeners
 		document.getElementById('saveButton').addEventListener('click', () => {
 			this.saveGif(false);
 		});
+
 		document.getElementById('saveAsButton').addEventListener('click', () => {
+			saveDropdownMenu.classList.add('hidden');
 			this.saveGif(true);
 		});
-		document.getElementById('saveFramesButton').addEventListener('click', () => {
-			this.saveFrames();
-		});
+
+		// Add save button listeners
+		// document.getElementById('saveFramesButton').addEventListener('click', () => {
+		// 	this.saveFrames();
+		// });
 
 		// Add custom frames upload handler
-		const uploadFramesButton = document.getElementById('uploadFramesButton');
-		const frameUploadInput = document.getElementById('frameUploadInput');
+		// const uploadFramesButton = document.getElementById('uploadFramesButton');
+		// const frameUploadInput = document.getElementById('frameUploadInput');
 
-		uploadFramesButton.addEventListener('click', () => {
-			frameUploadInput.click();
+		// uploadFramesButton.addEventListener('click', () => {
+		// 	frameUploadInput.click();
+		// });
+
+		// frameUploadInput.addEventListener('change', async (e) => {
+		// 	if (e.target.files.length > 0) {
+		// 		await this.handleCustomFrames(Array.from(e.target.files));
+		// 	}
+		// });
+
+		// Add modal close handler
+		document.getElementById('closeModal').addEventListener('click', () => {
+			this.hideOutputModal();
 		});
 
-		frameUploadInput.addEventListener('change', async (e) => {
-			if (e.target.files.length > 0) {
-				await this.handleCustomFrames(Array.from(e.target.files));
+		// Close modal when clicking outside
+		document.getElementById('outputModal').addEventListener('click', (e) => {
+			if (e.target.id === 'outputModal') {
+				this.hideOutputModal();
+			}
+		});
+
+		// Add escape key handler for modal
+		document.addEventListener('keydown', (e) => {
+			if (
+				e.key === 'Escape' &&
+				!document.getElementById('outputModal').classList.contains('hidden')
+			) {
+				this.hideOutputModal();
 			}
 		});
 	}
@@ -127,15 +173,81 @@ class Reto3DProcessor {
 
 	// Add these methods to control visibility
 	showImageContent() {
-		document.getElementById('imageContent').classList.remove('hidden');
+		const content = document.getElementById('imageContent');
+		const originalPreview = document.getElementById('originalPreviewCard');
+		const framesPreview = document.getElementById('framesPreviewCard');
+		const settings = document.getElementById('settingsCard');
+
+		// First show the container without opacity
+		content.classList.remove('hidden');
+
+		// Trigger the animations in sequence
+		setTimeout(() => {
+			// Slide up original preview
+			originalPreview.classList.remove('translate-y-8', 'opacity-0');
+
+			// Slide up frames preview after a delay
+			setTimeout(() => {
+				framesPreview.classList.remove('translate-y-8', 'opacity-0');
+
+				// Slide up settings after another delay
+				setTimeout(() => {
+					settings.classList.remove('translate-y-8', 'opacity-0');
+				}, 200);
+			}, 200);
+		}, 100);
 	}
 
 	hideImageContent() {
-		document.getElementById('imageContent').classList.add('hidden');
+		const content = document.getElementById('imageContent');
+		const originalPreview = document.getElementById('originalPreviewCard');
+		const framesPreview = document.getElementById('framesPreviewCard');
+		const settings = document.getElementById('settingsCard');
+
+		// Reset the animations
+		originalPreview.classList.add('translate-y-8', 'opacity-0');
+		framesPreview.classList.add('translate-y-8', 'opacity-0');
+		settings.classList.add('translate-y-8', 'opacity-0');
+
+		// Hide the container after animations
+		setTimeout(() => {
+			content.classList.add('hidden');
+		}, 500);
+	}
+
+	showSpinner() {
+		const spinner = document.getElementById('uploadSpinner');
+		spinner.classList.remove('hidden');
+		// Use setTimeout to ensure the transition happens after display is set
+		setTimeout(() => {
+			spinner.classList.remove('opacity-0');
+		}, 10);
+	}
+
+	hideSpinner() {
+		const spinner = document.getElementById('uploadSpinner');
+		spinner.classList.add('opacity-0');
+		// Wait for transition to complete before hiding
+		setTimeout(() => {
+			spinner.classList.add('hidden');
+		}, 300); // Match this with the duration-300 class (300ms)
+	}
+
+	hideUploadZone() {
+		document.getElementById('dropZone').classList.add('hidden');
+	}
+
+	showUploadZone() {
+		document.getElementById('dropZone').classList.remove('hidden');
 	}
 
 	async handleImageFile(file) {
 		try {
+			this.hideOutputModal(); // Hide modal when loading new file
+			// Hide upload zone and show spinner
+			this.hideUploadZone();
+			this.showSpinner();
+
 			console.log('Processing file:', file.name);
 			this.originalFilename = file.name;
 			this.originalFilePath = file.path;
@@ -157,10 +269,18 @@ class Reto3DProcessor {
 			this.displayFrames();
 
 			document.getElementById('processButton').disabled = false;
+
+			// Hide save buttons when new image is loaded
+			document.querySelector('.output-section').classList.add('hidden');
 		} catch (error) {
 			console.error('Error processing image:', error);
 			alert(`Error processing image: ${error.message}`);
 			this.hideImageContent();
+			// Show upload zone again on error
+			this.showUploadZone();
+		} finally {
+			// Always hide spinner
+			this.hideSpinner();
 		}
 	}
 
@@ -182,8 +302,10 @@ class Reto3DProcessor {
 		for (let i = 0; i < this.frames.length; i++) {
 			const frameBuffer = this.frames[i];
 			const frameContainer = document.createElement('div');
-			frameContainer.className = 'frame-container';
+			frameContainer.className =
+				'max-w-full rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-neutral-800';
 
+			// Create and setup the image
 			const img = document.createElement('img');
 			const chunks = this.chunkArray(frameBuffer, 32768);
 			let binary = '';
@@ -192,20 +314,79 @@ class Reto3DProcessor {
 			});
 			const base64 = btoa(binary);
 			img.src = `data:image/png;base64,${base64}`;
+			img.className = 'h-auto max-w-full rounded-t-lg';
+			img.alt = `Frame ${i + 1}`;
 
-			const editButton = document.createElement('button');
-			editButton.textContent = 'Edit';
-			editButton.onclick = () => this.showFrameEditor(i);
+			// Create the content container
+			const content = document.createElement('div');
+			content.className = 'p-5';
+
+			// Add frame title
+			const title = document.createElement('h5');
+			title.className =
+				'mb-3 text-2xl font-bold tracking-tight text-gray-900 dark:text-white';
+			title.textContent = `Frame ${i + 1}`;
+
+			// Add dimensions text
+			const dimensions = document.createElement('p');
+			dimensions.className = 'mb-5 font-normal text-gray-700 dark:text-gray-400';
+			// We'll set the dimensions once the image loads
+			img.onload = () => {
+				dimensions.textContent = `Dimension: ${img.naturalWidth}x${img.naturalHeight}`;
+			};
+
+			// Create crop button
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className =
+				'me-2 inline-flex w-full items-center justify-center rounded-lg border-2 border-solid border-neutral-800 bg-neutral-200 p-2.5 text-center font-medium text-neutral-800 hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 dark:bg-neutral-200 dark:hover:bg-neutral-400 dark:focus:ring-neutral-800';
+			button.onclick = () => this.showFrameEditor(i);
+
+			const buttonText = document.createElement('p');
+			buttonText.className = 'pr-2';
+			buttonText.textContent = 'Crop';
+
+			const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			svg.setAttribute('class', 'h-6 w-6 fill-neutral-800');
+			svg.setAttribute('width', '32');
+			svg.setAttribute('height', '32');
+			svg.setAttribute('viewBox', '0 0 256 256');
+
+			const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+			path.setAttribute(
+				'd',
+				'M240,192a8,8,0,0,1-8,8H200v32a8,8,0,0,1-16,0V200H64a8,8,0,0,1-8-8V72H24a8,8,0,0,1,0-16H56V24a8,8,0,0,1,16,0V184H232A8,8,0,0,1,240,192ZM96,72h88v88a8,8,0,0,0,16,0V64a8,8,0,0,0-8-8H96a8,8,0,0,0,0,16Z'
+			);
+
+			const srOnly = document.createElement('span');
+			srOnly.className = 'sr-only';
+			srOnly.textContent = 'Icon description';
+
+			// Assemble all elements
+			svg.appendChild(path);
+			button.appendChild(buttonText);
+			button.appendChild(svg);
+			button.appendChild(srOnly);
+
+			content.appendChild(title);
+			content.appendChild(dimensions);
+			content.appendChild(button);
 
 			frameContainer.appendChild(img);
-			frameContainer.appendChild(editButton);
+			frameContainer.appendChild(content);
 			container.appendChild(frameContainer);
 		}
 	}
 
 	async createGif() {
 		try {
-			const delay = parseInt(document.getElementById('frameDelay').value);
+			// Get selected radio button value for delay
+			const selectedDelay = document.querySelector('input[name="delay"]:checked');
+			if (!selectedDelay) {
+				throw new Error('Please select a frame delay speed');
+			}
+			const delay = parseInt(selectedDelay.value);
+
 			// Get the dimensions from the first frame
 			const firstFrame = document.querySelector('#frameImages img');
 
@@ -224,6 +405,7 @@ class Reto3DProcessor {
 
 			console.log('Creating GIF with frames:', this.frames.length);
 			console.log('Dimensions:', width, 'x', height);
+			console.log('Selected delay:', delay);
 
 			console.log(
 				'Frames data:',
@@ -254,10 +436,37 @@ class Reto3DProcessor {
 			// Display the GIF preview
 			const outputElement = document.getElementById('outputGif');
 			outputElement.src = `data:image/gif;base64,${base64}`;
+
+			// Show the modal instead of just showing the output section
+			document.querySelector('.output-section').classList.remove('hidden');
+			this.showOutputModal();
 		} catch (error) {
 			console.error('Error creating GIF:', error);
 			alert(`Error creating GIF: ${error.message}`);
+			// Hide output if there's an error
+			document.querySelector('.output-section').classList.add('hidden');
+			this.hideOutputModal();
 		}
+	}
+
+	// Add this method to show notifications
+	showNotification(message, duration = 5000) {
+		const notification = document.getElementById('saveNotification');
+		notification.querySelector('p').textContent = message;
+		notification.classList.remove('hidden');
+
+		// Trigger fade in
+		setTimeout(() => {
+			notification.classList.remove('opacity-0');
+		}, 10);
+
+		// Hide after duration
+		setTimeout(() => {
+			notification.classList.add('opacity-0');
+			setTimeout(() => {
+				notification.classList.add('hidden');
+			}, 300);
+		}, duration);
 	}
 
 	async saveGif(saveAs = false) {
@@ -272,12 +481,20 @@ class Reto3DProcessor {
 				? this.originalFilename.replace(/\.[^/.]+$/, '.gif')
 				: 'animation.gif';
 
-			await window.electronAPI.saveGif(
+			const savedPath = await window.electronAPI.saveGif(
 				this.currentGifBuffer,
 				defaultFilename,
 				saveAs,
 				this.originalFilePath
 			);
+
+			// Show notification with the save location
+			if (savedPath) {
+				const message = saveAs
+					? `Image has been saved to ${savedPath}`
+					: `Image has been saved to ${savedPath}`;
+				this.showNotification(message);
+			}
 		} catch (error) {
 			console.error('Error saving GIF:', error);
 			alert(`Error saving GIF: ${error.message}`);
@@ -303,20 +520,11 @@ class Reto3DProcessor {
 	}
 
 	setupFrameEditor() {
-		const editButton = document.getElementById('editFramesButton');
 		const editor = document.getElementById('frameEditor');
 		const applyButton = document.getElementById('applyEdits');
 		const resetButton = document.getElementById('resetCrop');
 		const cancelButton = document.getElementById('cancelEdits');
 		this.currentEditingFrame = -1;
-
-		editButton.addEventListener('click', () => {
-			if (!this.frames || !this.frames.length) {
-				alert('No frames to edit');
-				return;
-			}
-			this.showFrameEditor(0);
-		});
 
 		applyButton.addEventListener('click', () => {
 			if (this.cropper) {
@@ -433,6 +641,11 @@ class Reto3DProcessor {
 
 	async handleCustomFrames(files) {
 		try {
+			this.hideOutputModal(); // Hide modal when loading new frames
+			// Hide upload zone and show spinner
+			this.hideUploadZone();
+			this.showSpinner();
+
 			// Reset existing frames
 			this.frames = [];
 
@@ -454,11 +667,51 @@ class Reto3DProcessor {
 			// Display the frames
 			await this.displayFrames();
 			document.getElementById('processButton').disabled = false;
+
+			// Hide save buttons when new frames are loaded
+			document.querySelector('.output-section').classList.add('hidden');
 		} catch (error) {
 			console.error('Error processing custom frames:', error);
 			alert(`Error processing custom frames: ${error.message}`);
 			this.hideImageContent();
+			// Show upload zone again on error
+			this.showUploadZone();
+		} finally {
+			// Always hide spinner
+			this.hideSpinner();
 		}
+	}
+
+	// Add these methods to control modal visibility
+	showOutputModal() {
+		const modal = document.getElementById('outputModal');
+		const modalContent = modal.querySelector('.output-section');
+		modal.classList.remove('hidden');
+
+		// Trigger fade and scale in
+		setTimeout(() => {
+			modal.classList.remove('opacity-0');
+			modalContent.classList.remove('scale-95');
+		}, 10);
+
+		// Add class to prevent body scroll
+		document.body.classList.add('overflow-hidden');
+	}
+
+	hideOutputModal() {
+		const modal = document.getElementById('outputModal');
+		const modalContent = modal.querySelector('.output-section');
+
+		// Trigger fade and scale out
+		modal.classList.add('opacity-0');
+		modalContent.classList.add('scale-95');
+
+		// Wait for animation to complete before hiding
+		setTimeout(() => {
+			modal.classList.add('hidden');
+			// Remove class to allow body scroll
+			document.body.classList.remove('overflow-hidden');
+		}, 300);
 	}
 }
 

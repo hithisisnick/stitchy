@@ -88,43 +88,28 @@ app.whenReady().then(() => {
 
 	ipcMain.handle(
 		'save-gif',
-		async (event, gifBuffer, defaultFilename, saveAs, originalPath) => {
+		async (event, buffer, defaultFilename, saveAs, originalPath) => {
 			try {
 				let savePath;
 
 				if (saveAs) {
-					// Show save dialog if "Save As" was clicked
-					const { filePath, canceled } = await dialog.showSaveDialog({
-						title: 'Save GIF',
-						defaultPath: defaultFilename || 'animation.gif',
-						filters: [{ name: 'GIF Files', extensions: ['gif'] }],
+					const result = await dialog.showSaveDialog({
+						defaultPath: defaultFilename,
+						filters: [{ name: 'GIF files', extensions: ['gif'] }],
 					});
 
-					if (canceled || !filePath) {
-						throw new Error('Save cancelled');
-					}
-
-					savePath = filePath;
+					if (result.canceled) return;
+					savePath = result.filePath;
 				} else {
-					// Auto-save in 'animated' folder next to original file
-					if (!originalPath) {
-						throw new Error('Original file path not available');
-					}
-
-					const originalDir = path.dirname(originalPath);
-					const animatedDir = path.join(originalDir, 'animated');
-
-					// Create 'animated' directory if it doesn't exist
-					await fs.promises.mkdir(animatedDir, { recursive: true });
-
-					savePath = path.join(animatedDir, defaultFilename);
+					// Use the same directory as the original file if available
+					const dir = originalPath
+						? path.dirname(originalPath)
+						: app.getPath('downloads');
+					savePath = path.join(dir, defaultFilename);
 				}
 
-				// Convert array back to Buffer and save
-				const buffer = Buffer.from(gifBuffer);
-				await fs.promises.writeFile(savePath, buffer);
-				console.log('GIF saved successfully to:', savePath);
-				return true;
+				await fs.promises.writeFile(savePath, Buffer.from(buffer));
+				return savePath;
 			} catch (error) {
 				console.error('Error saving GIF:', error);
 				throw error;
