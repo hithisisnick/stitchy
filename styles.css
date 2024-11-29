@@ -257,3 +257,42 @@ input[type='number'] {
 	padding: 5px 10px;
 	font-size: 12px;
 }
+
+/* Modern scrollbar styling */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #4b5563;
+	border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #374151;
+}
+
+/* Prevent layout shift from scrollbar */
+html {
+	overflow-y: overlay;
+	margin-right: 0;
+	scrollbar-gutter: stable;
+}
+
+/* For Firefox */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: #4b5563 transparent;
+}
+
+/* Specific styling for frame images container */
+.frame-images {
+	overflow-x: overlay;
+	margin-bottom: 0;
+	padding-bottom: 10px; /* Add padding to prevent content overlap with scrollbar */
+}

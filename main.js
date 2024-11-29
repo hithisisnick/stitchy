@@ -5,8 +5,26 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const ffmpegPath = require('ffmpeg-static');
-ffmpeg.setFfmpegPath(ffmpegPath);
 const os = require('os');
+const tmp = require('tmp-promise');
+
+// Handle FFmpeg path for both dev and production
+const getFfmpegPath = () => {
+	if (app.isPackaged) {
+		// In production, use path relative to app resources
+		return path.join(
+			process.resourcesPath,
+			'app.asar.unpacked',
+			'node_modules',
+			'ffmpeg-static',
+			ffmpegPath.replace(/^.*[/\\]node_modules[/\\]ffmpeg-static[/\\]/, '')
+		);
+	}
+	return ffmpegPath;
+};
+
+// Set FFmpeg path
+ffmpeg.setFfmpegPath(getFfmpegPath());
 
 function createWindow() {
 	const mainWindow = new BrowserWindow({
@@ -101,11 +119,16 @@ app.whenReady().then(() => {
 					if (result.canceled) return;
 					savePath = result.filePath;
 				} else {
-					// Use the same directory as the original file if available
-					const dir = originalPath
+					// Create animated folder in the same directory as the original file
+					const baseDir = originalPath
 						? path.dirname(originalPath)
 						: app.getPath('downloads');
-					savePath = path.join(dir, defaultFilename);
+					const animatedDir = path.join(baseDir, 'animated');
+
+					// Create the animated directory if it doesn't exist
+					await fs.promises.mkdir(animatedDir, { recursive: true });
+
+					savePath = path.join(animatedDir, defaultFilename);
 				}
 
 				await fs.promises.writeFile(savePath, Buffer.from(buffer));
@@ -120,8 +143,21 @@ app.whenReady().then(() => {
 	// Handle GIF creation
 	ipcMain.handle('create-gif', async (event, frames, options) => {
 		try {
+			console.log('FFmpeg path:', getFfmpegPath());
+			console.log('Starting GIF creation with options:', options);
+			console.log('Number of frames:', frames.length);
+
+			// Validate input
+			if (!frames || !Array.isArray(frames) || frames.length === 0) {
+				throw new Error('Invalid frames data');
+			}
+
+			if (!options || typeof options !== 'object') {
+				throw new Error('Invalid options');
+			}
+
 			// Create temporary directory for frames
-			const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'gif-'));
+			const { path: tmpDirPath } = await tmp.dir({ unsafeCleanup: true });
 			const frameFiles = [];
 
 			// Create ping-pong sequence: 1,2,3,2,1
@@ -134,7 +170,7 @@ app.whenReady().then(() => {
 			await Promise.all(
 				pingPongSequence.map(async (frameBuffer, index) => {
 					const framePath = path.join(
-						tmpDir,
+						tmpDirPath,
 						`frame_${index.toString().padStart(3, '0')}.png`
 					);
 					frameFiles.push(framePath);
@@ -160,7 +196,7 @@ app.whenReady().then(() => {
 				const command = ffmpeg();
 
 				command
-					.input(path.join(tmpDir, 'frame_%03d.png'))
+					.input(path.join(tmpDirPath, 'frame_%03d.png'))
 					.inputOptions(['-framerate', `${1000 / options.delay}`])
 					.outputOptions([
 						'-vf',
@@ -171,12 +207,25 @@ app.whenReady().then(() => {
 					.output(outputFile.path);
 
 				console.log('FFmpeg command:', command._getArguments().join(' '));
+				console.log('FFmpeg working directory:', process.cwd());
+				console.log('Temp directory exists:', fs.existsSync(tmpDirPath));
+				console.log('Output file path:', outputFile.path);
 
-				command.on('end', resolve);
+				command.on('start', (commandLine) => {
+					console.log('FFmpeg process started:', commandLine);
+				});
+
+				command.on('end', () => {
+					console.log('FFmpeg process completed');
+					resolve();
+				});
+
 				command.on('error', (err) => {
 					console.error('FFmpeg error:', err);
+					console.error('FFmpeg error stack:', err.stack);
 					reject(err);
 				});
+
 				command.on('stderr', (line) => console.log('FFmpeg:', line));
 
 				command.run();
@@ -187,7 +236,7 @@ app.whenReady().then(() => {
 			console.log('Generated GIF size:', gifBuffer.length);
 
 			// Clean up temporary files
-			await fs.promises.rm(tmpDir, { recursive: true });
+			await fs.promises.rm(tmpDirPath, { recursive: true, force: true });
 			await outputFile.cleanup();
 
 			if (gifBuffer.length === 0) {
@@ -196,7 +245,8 @@ app.whenReady().then(() => {
 
 			return Array.from(gifBuffer);
 		} catch (error) {
-			console.error('Error creating GIF:', error);
+			console.error('Error in create-gif handler:', error);
+			console.error('Error stack:', error.stack);
 			throw error;
 		}
 	});

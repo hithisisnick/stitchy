@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>3D GIF Creator</title>
+		<title>Stitchy</title>
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self'; img-src 'self' data: blob:; script-src 'self';" />
 		<link rel="stylesheet" href="styles/output.css" />
 		<link rel="stylesheet" href="node_modules/cropperjs/dist/cropper.css" />
 	</head>
@@ -14,9 +17,9 @@
 				<p class="text-sm font-medium"></p>
 			</div>
 
-			<h1 class="text-white text-3xl font-bold text-center mb-8">3D GIF Creator</h1>
+			<h1 class="text-white text-3xl font-bold text-center mb-8">Stitchy</h1>
 
-			<div class="p-6">
+			<div class="min-h-[calc(100vh-8rem)] flex flex-col">
 				<div class="upload-section">
 					<div id="dropZone" class="drop-zone">
 						<p class="text-gray-500">Drop your scan here or</p>
@@ -102,82 +105,6 @@
 					</div>
 
 					<div class="controls">
-						<div class="settings">
-							<div
-								id="settingsCard"
-								class="max-w-full rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-neutral-900 translate-y-8 opacity-0 transition-all duration-500 delay-400">
-								<div class="p-5">
-									<h3
-										class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-										Settings
-									</h3>
-									<label
-										for="quantity-input"
-										class="mb-2 block text-lg font-medium text-gray-900 dark:text-white"
-										>Frame delay</label
-									>
-									<ul class="grid w-full gap-6 md:grid-cols-3">
-										<li>
-											<input
-												type="radio"
-												id="slow-delay"
-												name="delay"
-												value="200"
-												class="peer hidden"
-												required />
-											<label
-												for="slow-delay"
-												class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white p-5 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 peer-checked:border-neutral-900 peer-checked:text-neutral-900 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300 dark:peer-checked:border-white dark:peer-checked:text-white">
-												<div class="block">
-													<div
-														class="w-full text-lg font-semibold">
-														0.5x
-													</div>
-												</div>
-											</label>
-										</li>
-										<li>
-											<input
-												type="radio"
-												id="normal-delay"
-												name="delay"
-												value="150"
-												class="peer hidden"
-												checked />
-											<label
-												for="normal-delay"
-												class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white p-5 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 peer-checked:border-neutral-900 peer-checked:text-neutral-900 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300 dark:peer-checked:border-white dark:peer-checked:text-white">
-												<div class="block">
-													<div
-														class="w-full text-lg font-semibold">
-														1x
-													</div>
-												</div>
-											</label>
-										</li>
-										<li>
-											<input
-												type="radio"
-												id="fast-delay"
-												name="delay"
-												value="100"
-												class="peer hidden" />
-											<label
-												for="fast-delay"
-												class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white p-5 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 peer-checked:border-neutral-900 peer-checked:text-neutral-900 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300 dark:peer-checked:border-white dark:peer-checked:text-white">
-												<div class="block">
-													<div
-														class="w-full text-lg font-semibold">
-														2x
-													</div>
-												</div>
-											</label>
-										</li>
-									</ul>
-								</div>
-							</div>
-						</div>
-
 						<button
 							id="processButton"
 							class="w-full text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium rounded-md text-sm px-5 py-4 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
@@ -197,25 +124,52 @@
 									<h3 class="text-xl font-semibold text-white">
 										Output GIF
 									</h3>
-									<button
-										id="closeModal"
-										class="text-gray-400 hover:text-gray-300 focus:outline-none">
-										<svg
-											class="w-6 h-6"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
+									<div class="flex items-center space-x-4">
+										<button
+											id="closeModal"
+											class="text-gray-400 hover:text-gray-300 focus:outline-none">
+											<svg
+												class="w-6 h-6"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24">
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</div>
 								</div>
 								<img
 									id="outputGif"
 									class="w-full h-auto rounded-lg shadow-md mb-4" />
+
+								<h3
+									class="mb-1 text-lg font-medium text-gray-900 dark:text-white">
+									Speed
+								</h3>
+								<div class="flex items-center space-x-2 mb-5">
+									<button
+										id="slowSpeedBtn"
+										class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white px-3 py-1 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300"
+										title="0.5x Speed">
+										0.5x
+									</button>
+									<button
+										id="normalSpeedBtn"
+										class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white px-3 py-1 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300"
+										title="1x Speed">
+										1x
+									</button>
+									<button
+										id="fastSpeedBtn"
+										class="inline-flex w-full cursor-pointer items-center justify-center border border-gray-200 bg-white px-3 py-1 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-400 dark:hover:bg-neutral-800 dark:hover:text-gray-300"
+										title="2x Speed">
+										2x
+									</button>
+								</div>
 								<div class="save-buttons">
 									<div class="inline-flex rounded-lg shadow-sm">
 										<button

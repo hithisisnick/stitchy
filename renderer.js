@@ -26,8 +26,43 @@ class Reto3DProcessor {
 		const saveDropdownButton = document.getElementById('saveDropdownButton');
 		const saveDropdownMenu = document.getElementById('saveDropdownMenu');
 
+		// Function to position dropdown
+		const positionDropdown = () => {
+			const buttonRect = saveDropdownButton.getBoundingClientRect();
+			const dropdownRect = saveDropdownMenu.getBoundingClientRect();
+			const windowHeight = window.innerHeight;
+
+			// Check if there's enough space below
+			const spaceBelow = windowHeight - buttonRect.bottom;
+			const spaceNeeded = dropdownRect.height + 8; // 8px buffer
+
+			if (spaceBelow < spaceNeeded) {
+				// Position above
+				saveDropdownMenu.style.bottom = '100%';
+				saveDropdownMenu.style.top = 'auto';
+				saveDropdownMenu.classList.remove('mt-2');
+				saveDropdownMenu.classList.add('mb-2');
+			} else {
+				// Position below
+				saveDropdownMenu.style.top = '100%';
+				saveDropdownMenu.style.bottom = 'auto';
+				saveDropdownMenu.classList.remove('mb-2');
+				saveDropdownMenu.classList.add('mt-2');
+			}
+		};
+
 		saveDropdownButton.addEventListener('click', () => {
 			saveDropdownMenu.classList.toggle('hidden');
+			if (!saveDropdownMenu.classList.contains('hidden')) {
+				positionDropdown();
+			}
+		});
+
+		// Reposition dropdown on window resize
+		window.addEventListener('resize', () => {
+			if (!saveDropdownMenu.classList.contains('hidden')) {
+				positionDropdown();
+			}
 		});
 
 		// Close dropdown when clicking outside
@@ -50,25 +85,6 @@ class Reto3DProcessor {
 			this.saveGif(true);
 		});
 
-		// Add save button listeners
-		// document.getElementById('saveFramesButton').addEventListener('click', () => {
-		// 	this.saveFrames();
-		// });
-
-		// Add custom frames upload handler
-		// const uploadFramesButton = document.getElementById('uploadFramesButton');
-		// const frameUploadInput = document.getElementById('frameUploadInput');
-
-		// uploadFramesButton.addEventListener('click', () => {
-		// 	frameUploadInput.click();
-		// });
-
-		// frameUploadInput.addEventListener('change', async (e) => {
-		// 	if (e.target.files.length > 0) {
-		// 		await this.handleCustomFrames(Array.from(e.target.files));
-		// 	}
-		// });
-
 		// Add modal close handler
 		document.getElementById('closeModal').addEventListener('click', () => {
 			this.hideOutputModal();
@@ -90,6 +106,19 @@ class Reto3DProcessor {
 				this.hideOutputModal();
 			}
 		});
+	}
+
+	setupSpeedControls() {
+		// Add speed control handlers
+		document
+			.getElementById('slowSpeedBtn')
+			.addEventListener('click', () => this.updateGifSpeed(200));
+		document
+			.getElementById('normalSpeedBtn')
+			.addEventListener('click', () => this.updateGifSpeed(150));
+		document
+			.getElementById('fastSpeedBtn')
+			.addEventListener('click', () => this.updateGifSpeed(100));
 	}
 
 	// Add this helper method to your class
@@ -148,6 +177,10 @@ class Reto3DProcessor {
 			}
 		});
 
+		dropZone.addEventListener('click', () => {
+			fileInput.click();
+		});
+
 		selectButton.addEventListener('click', () => {
 			fileInput.click();
 		});
@@ -180,6 +213,8 @@ class Reto3DProcessor {
 
 		// First show the container without opacity
 		content.classList.remove('hidden');
+		content.offsetHeight;
+		content.classList.remove('opacity-0');
 
 		// Trigger the animations in sequence
 		setTimeout(() => {
@@ -194,7 +229,7 @@ class Reto3DProcessor {
 				setTimeout(() => {
 					settings.classList.remove('translate-y-8', 'opacity-0');
 				}, 200);
-			}, 200);
+			}, 100);
 		}, 100);
 	}
 
@@ -204,14 +239,16 @@ class Reto3DProcessor {
 		const framesPreview = document.getElementById('framesPreviewCard');
 		const settings = document.getElementById('settingsCard');
 
+		if (!content || !originalPreview || !framesPreview) return;
+
 		// Reset the animations
-		originalPreview.classList.add('translate-y-8', 'opacity-0');
-		framesPreview.classList.add('translate-y-8', 'opacity-0');
-		settings.classList.add('translate-y-8', 'opacity-0');
+		originalPreview?.classList.add('translate-y-8', 'opacity-0');
+		framesPreview?.classList.add('translate-y-8', 'opacity-0');
+		settings?.classList.add('translate-y-8', 'opacity-0');
 
 		// Hide the container after animations
 		setTimeout(() => {
-			content.classList.add('hidden');
+			content?.classList.add('hidden');
 		}, 500);
 	}
 
@@ -380,17 +417,9 @@ class Reto3DProcessor {
 
 	async createGif() {
 		try {
-			// Get selected radio button value for delay
-			const selectedDelay = document.querySelector('input[name="delay"]:checked');
-			if (!selectedDelay) {
-				throw new Error('Please select a frame delay speed');
-			}
-			const delay = parseInt(selectedDelay.value);
-
-			// Get the dimensions from the first frame
+			const delay = 150;
 			const firstFrame = document.querySelector('#frameImages img');
 
-			// Check if we have valid frames
 			if (!firstFrame) {
 				throw new Error('No frames available. Please process an image first.');
 			}
@@ -398,31 +427,39 @@ class Reto3DProcessor {
 			const width = firstFrame.naturalWidth;
 			const height = firstFrame.naturalHeight;
 
-			// Verify we have valid frames data
 			if (!this.frames || !this.frames.length) {
 				throw new Error('No frame data available');
 			}
 
-			console.log('Creating GIF with frames:', this.frames.length);
-			console.log('Dimensions:', width, 'x', height);
-			console.log('Selected delay:', delay);
+			console.log('Creating GIF:', {
+				frames: this.frames.length,
+				dimensions: `${width}x${height}`,
+				delay,
+			});
 
-			console.log(
-				'Frames data:',
-				this.frames.map((f) => ({ length: f.length }))
-			);
-
-			// Create GIF with quality parameters
-			const gifBuffer = await window.electronAPI.createGif(this.frames, {
+			// Add timeout promise
+			const gifPromise = window.electronAPI.createGif(this.frames, {
 				delay: delay,
 				width: width,
 				height: height,
-				quality: 10, // Lower number means better quality (1-20)
-				preserveColors: true, // Ensures better color preservation
-				transparent: null, // Disable transparency
+				quality: 10,
+				preserveColors: true,
+				transparent: null,
 			});
 
-			// Store the buffer for later saving
+			// Add 30 second timeout
+			const timeoutPromise = new Promise((_, reject) => {
+				setTimeout(() => reject(new Error('GIF creation timed out')), 30000);
+			});
+
+			// Race between GIF creation and timeout
+			const gifBuffer = await Promise.race([gifPromise, timeoutPromise]);
+
+			if (!gifBuffer || !gifBuffer.length) {
+				throw new Error('Invalid GIF buffer received');
+			}
+
+			// Store and display the GIF
 			this.currentGifBuffer = gifBuffer;
 
 			// Convert array to base64 for preview
@@ -440,10 +477,46 @@ class Reto3DProcessor {
 			// Show the modal instead of just showing the output section
 			document.querySelector('.output-section').classList.remove('hidden');
 			this.showOutputModal();
+
+			// Update active state of speed buttons
+			const speedButtons = ['slowSpeedBtn', 'normalSpeedBtn', 'fastSpeedBtn'];
+			speedButtons.forEach((btnId) => {
+				const btn = document.getElementById(btnId);
+				if (
+					(btnId === 'slowSpeedBtn' && delay === 200) ||
+					(btnId === 'normalSpeedBtn' && delay === 150) ||
+					(btnId === 'fastSpeedBtn' && delay === 100)
+				) {
+					btn.classList.add(
+						'border-gray-300',
+						'dark:border-gray-300',
+						'text-gray-300',
+						'dark:text-gray-300'
+					);
+					btn.classList.remove(
+						'border-gray-200',
+						'dark:border-gray-700',
+						'text-gray-500',
+						'dark:text-gray-400'
+					);
+				} else {
+					btn.classList.remove(
+						'border-gray-300',
+						'dark:border-gray-300',
+						'text-gray-300',
+						'dark:text-gray-300'
+					);
+					btn.classList.add(
+						'border-gray-200',
+						'dark:border-gray-700',
+						'text-gray-500',
+						'dark:text-gray-400'
+					);
+				}
+			});
 		} catch (error) {
 			console.error('Error creating GIF:', error);
 			alert(`Error creating GIF: ${error.message}`);
-			// Hide output if there's an error
 			document.querySelector('.output-section').classList.add('hidden');
 			this.hideOutputModal();
 		}
@@ -594,8 +667,11 @@ class Reto3DProcessor {
 				},
 			});
 
-			// Show editor
-			editor.style.display = 'flex';
+			// Show editor with fade
+			editor.classList.remove('hidden');
+			// Force reflow
+			editor.offsetHeight;
+			editor.classList.add('opacity-100');
 		} catch (error) {
 			console.error('Error showing frame editor:', error);
 			alert('Error opening editor: ' + error.message);
@@ -629,7 +705,11 @@ class Reto3DProcessor {
 			await this.displayFrames();
 
 			// Close editor and cleanup
-			document.getElementById('frameEditor').style.display = 'none';
+			const editor = document.getElementById('frameEditor');
+			editor.classList.remove('opacity-100');
+			setTimeout(() => {
+				editor.classList.add('hidden');
+			}, 300);
 			this.cropper.destroy();
 			this.cropper = null;
 			this.currentEditingFrame = -1;
@@ -692,6 +772,8 @@ class Reto3DProcessor {
 		setTimeout(() => {
 			modal.classList.remove('opacity-0');
 			modalContent.classList.remove('scale-95');
+			// Setup speed controls after modal is shown
+			this.setupSpeedControls();
 		}, 10);
 
 		// Add class to prevent body scroll
@@ -713,9 +795,93 @@ class Reto3DProcessor {
 			document.body.classList.remove('overflow-hidden');
 		}, 300);
 	}
+
+	// Add this new method to handle speed updates
+	async updateGifSpeed(delay) {
+		try {
+			if (!this.frames || !this.frames.length) {
+				console.error('No frames available');
+				return;
+			}
+
+			// Get dimensions from the first frame
+			const firstFrame = document.querySelector('#frameImages img');
+			const width = firstFrame.naturalWidth;
+			const height = firstFrame.naturalHeight;
+
+			// Create new GIF with updated delay
+			const gifBuffer = await window.electronAPI.createGif(this.frames, {
+				delay: delay,
+				width: width,
+				height: height,
+				quality: 10,
+				preserveColors: true,
+				transparent: null,
+			});
+
+			// Store the buffer for later saving
+			this.currentGifBuffer = gifBuffer;
+
+			// Convert array to base64 for preview
+			const chunks = this.chunkArray(gifBuffer, 32768);
+			let binary = '';
+			chunks.forEach((chunk) => {
+				binary += String.fromCharCode.apply(null, chunk);
+			});
+			const base64 = btoa(binary);
+
+			// Update the GIF preview
+			const outputElement = document.getElementById('outputGif');
+			outputElement.src = `data:image/gif;base64,${base64}`;
+
+			// Update active state of speed buttons
+			const speedButtons = ['slowSpeedBtn', 'normalSpeedBtn', 'fastSpeedBtn'];
+			speedButtons.forEach((btnId) => {
+				const btn = document.getElementById(btnId);
+				if (
+					(btnId === 'slowSpeedBtn' && delay === 200) ||
+					(btnId === 'normalSpeedBtn' && delay === 150) ||
+					(btnId === 'fastSpeedBtn' && delay === 100)
+				) {
+					btn.classList.add(
+						'border-gray-300',
+						'dark:border-gray-300',
+						'text-gray-300',
+						'dark:text-gray-300'
+					);
+					btn.classList.remove(
+						'border-gray-200',
+						'dark:border-gray-700',
+						'text-gray-500',
+						'dark:text-gray-400'
+					);
+				} else {
+					btn.classList.remove(
+						'border-gray-300',
+						'dark:border-gray-300',
+						'text-gray-300',
+						'dark:text-gray-300'
+					);
+					btn.classList.add(
+						'border-gray-200',
+						'dark:border-gray-700',
+						'text-gray-500',
+						'dark:text-gray-400'
+					);
+				}
+			});
+		} catch (error) {
+			console.error('Error updating GIF speed:', error);
+			alert(`Error updating GIF speed: ${error.message}`);
+		}
+	}
 }
 
 // Wait for DOMContentLoaded to ensure APIs are available
-window.addEventListener('DOMContentLoaded', () => {
-	new Reto3DProcessor();
+let processor = null;
+
+window.addEventListener('DOMContentLoaded', async () => {
+	// Wait a tick to ensure all DOM elements are available
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	processor = new Reto3DProcessor();
 });

@@ -1,7 +1,7 @@
 {
-	"name": "reto3d-processor",
+	"name": "stitchy",
 	"version": "1.0.0",
-	"description": "RETO3D GIF Creator",
+	"description": "3D GIF Creator",
 	"main": "main.js",
 	"scripts": {
 		"start": "electron .",
@@ -10,11 +10,49 @@
 		"watch:css": "tailwindcss -i ./styles/input.css -o ./styles/output.css --watch",
 		"build:css": "tailwindcss -i ./styles/input.css -o ./styles/output.css"
 	},
+	"build": {
+		"files": [
+			"*.js",
+			"styles/**/*",
+			"node_modules/**/*",
+			"package.json",
+			"index.html"
+		],
+		"asar": true,
+		"asarUnpack": [
+			"node_modules/sharp/**/*",
+			"node_modules/ffmpeg-static/**/*",
+			"node_modules/fluent-ffmpeg/**/*"
+		],
+		"directories": {
+			"output": "dist"
+		},
+		"appId": "com.stitchy.app",
+		"productName": "Stitchy",
+		"mac": {
+			"target": [
+				"dmg",
+				"zip"
+			],
+			"category": "public.app-category.graphics-design"
+		},
+		"win": {
+			"target": [
+				"nsis",
+				"portable"
+			]
+		},
+		"linux": {
+			"target": [
+				"AppImage",
+				"deb"
+			]
+		}
+	},
 	"dependencies": {
 		"cropperjs": "^1.6.2",
 		"ffmpeg-static": "^5.2.0",
 		"fluent-ffmpeg": "^2.1.2",
-		"gif.js": "^0.2.0",
 		"react-dropzone": "^14.3.5",
 		"sharp": "^0.32.6",
 		"tmp-promise": "^3.0.3"

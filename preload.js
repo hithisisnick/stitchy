@@ -5,7 +5,14 @@ const CropperClass = require('cropperjs');
 const electronAPI = {
 	processImage: (imageBuffer) => ipcRenderer.invoke('process-image', imageBuffer),
 	processCustomFrame: (buffer) => ipcRenderer.invoke('process-custom-frame', buffer),
-	createGif: (frames, options) => ipcRenderer.invoke('create-gif', frames, options),
+	createGif: async (frames, options) => {
+		try {
+			return await ipcRenderer.invoke('create-gif', frames, options);
+		} catch (error) {
+			console.error('Error in createGif bridge:', error);
+			throw error;
+		}
+	},
 	saveGif: async (buffer, defaultFilename, saveAs, originalPath) => {
 		return await ipcRenderer.invoke(
 			'save-gif',
