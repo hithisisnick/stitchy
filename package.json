@@ -16,13 +16,15 @@
 			"styles/**/*",
 			"node_modules/**/*",
 			"package.json",
-			"index.html"
+			"index.html",
+			"node_modules/cropperjs/dist/cropper.min.css"
 		],
 		"asar": true,
 		"asarUnpack": [
 			"node_modules/sharp/**/*",
 			"node_modules/ffmpeg-static/**/*",
-			"node_modules/fluent-ffmpeg/**/*"
+			"node_modules/fluent-ffmpeg/**/*",
+			"node_modules/cropperjs/**/*"
 		],
 		"directories": {
 			"output": "dist"
@@ -50,7 +52,7 @@
 		}
 	},
 	"dependencies": {
-		"cropperjs": "^1.6.2",
+		"cropperjs": "^1.6.1",
 		"ffmpeg-static": "^5.2.0",
 		"fluent-ffmpeg": "^2.1.2",
 		"react-dropzone": "^14.3.5",

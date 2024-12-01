@@ -106,6 +106,14 @@ class Reto3DProcessor {
 				this.hideOutputModal();
 			}
 		});
+
+		this.setupResetButton();
+
+		// Add upload another button handler
+		document.getElementById('uploadAnotherButton').addEventListener('click', () => {
+			this.hideOutputModal();
+			this.resetProcessor();
+		});
 	}
 
 	setupSpeedControls() {
@@ -241,15 +249,16 @@ class Reto3DProcessor {
 
 		if (!content || !originalPreview || !framesPreview) return;
 
-		// Reset the animations
-		originalPreview?.classList.add('translate-y-8', 'opacity-0');
-		framesPreview?.classList.add('translate-y-8', 'opacity-0');
+		// Add opacity transitions first
+		content.classList.add('opacity-0');
+		originalPreview.classList.add('translate-y-8', 'opacity-0');
+		framesPreview.classList.add('translate-y-8', 'opacity-0');
 		settings?.classList.add('translate-y-8', 'opacity-0');
 
-		// Hide the container after animations
-		setTimeout(() => {
-			content?.classList.add('hidden');
-		}, 500);
+		// Hide immediately after starting the fade
+		requestAnimationFrame(() => {
+			content.classList.add('hidden');
+		});
 	}
 
 	showSpinner() {
@@ -303,12 +312,27 @@ class Reto3DProcessor {
 
 			// Store and display frames
 			this.frames = result.frames;
+			this.originalFrames = result.frames.map((frame) => [...frame]);
 			this.displayFrames();
 
 			document.getElementById('processButton').disabled = false;
 
 			// Hide save buttons when new image is loaded
 			document.querySelector('.output-section').classList.add('hidden');
+
+			// Store original image dimensions
+			this.originalWidth = result.metadata.originalWidth;
+			this.originalHeight = result.metadata.originalHeight;
+
+			// Store original image buffer
+			this.originalFrames = [buffer]; // Store full original image
+
+			// Show reset button with animation
+			const resetButton = document.getElementById('resetButton');
+			resetButton.classList.remove('hidden');
+			// Force reflow
+			resetButton.offsetHeight;
+			resetButton.classList.remove('opacity-0');
 		} catch (error) {
 			console.error('Error processing image:', error);
 			alert(`Error processing image: ${error.message}`);
@@ -593,46 +617,192 @@ class Reto3DProcessor {
 	}
 
 	setupFrameEditor() {
+		// Wait for DOM to be ready
+		if (!document.getElementById('frameEditor')) {
+			console.warn('Frame editor elements not found, waiting for DOM...');
+			setTimeout(() => this.setupFrameEditor(), 100);
+			return;
+		}
+
 		const editor = document.getElementById('frameEditor');
 		const applyButton = document.getElementById('applyEdits');
 		const resetButton = document.getElementById('resetCrop');
+		const resetToOriginalButton = document.getElementById('resetToOriginal');
 		const cancelButton = document.getElementById('cancelEdits');
 		this.currentEditingFrame = -1;
+		this.hasBeenCropped = false;
+
+		// Make sure editor is visible but transparent initially
+		editor.classList.add('hidden', 'opacity-0');
+
+		// Initially hide reset to original and disable reset crop
+		resetToOriginalButton.classList.add('hidden');
+		resetButton.disabled = true;
+		resetButton.classList.add('opacity-50', 'cursor-not-allowed');
 
 		applyButton.addEventListener('click', () => {
 			if (this.cropper) {
 				this.applyFrameEdits();
+				this.hasBeenCropped = true;
 			}
 		});
 
 		resetButton.addEventListener('click', () => {
 			if (this.cropper) {
 				this.cropper.reset();
+				resetButton.disabled = true;
+				resetButton.classList.add('opacity-50', 'cursor-not-allowed');
+			}
+		});
+
+		resetToOriginalButton.addEventListener('click', () => {
+			if (
+				this.currentEditingFrame >= 0 &&
+				this.originalFrames[this.currentEditingFrame]
+			) {
+				// Reset the current frame to its original state
+				const originalFrame = this.originalFrames[this.currentEditingFrame];
+
+				// Cleanup existing cropper
+				if (this.cropper) {
+					this.cropper.destroy();
+					this.cropper = null;
+				}
+
+				// Create new image with original frame data
+				const img = document.createElement('img');
+				const chunks = this.chunkArray(originalFrame, 32768);
+				let binary = '';
+				chunks.forEach((chunk) => {
+					binary += String.fromCharCode.apply(null, chunk);
+				});
+				const base64 = btoa(binary);
+				img.src = `data:image/png;base64,${base64}`;
+
+				// Replace image and reinitialize cropper
+				const cropContainer = editor.querySelector('.crop-container');
+				cropContainer.innerHTML = '';
+				cropContainer.appendChild(img);
+
+				// Wait for image to load before initializing new cropper
+				img.onload = () => {
+					this.initializeCropper(img, this.currentEditingFrame);
+				};
+
+				// Reset states
+				this.hasBeenCropped = false;
+				resetToOriginalButton.classList.add('hidden');
+				resetButton.disabled = true;
+				resetButton.classList.add('opacity-50', 'cursor-not-allowed');
 			}
 		});
 
 		cancelButton.addEventListener('click', () => {
-			if (this.cropper) {
-				this.cropper.destroy();
-				this.cropper = null;
-			}
-			editor.style.display = 'none';
-			this.currentEditingFrame = -1;
+			this.hideFrameEditor();
 		});
+	}
+
+	// Modify the initializeCropper method to handle initial crop area and frame boundaries
+	initializeCropper(img, frameIndex) {
+		// Calculate initial crop area based on the frame position
+		const frameWidth = Math.floor(this.originalWidth / 3);
+		const margin = 2;
+		const initialCrop = {
+			x: frameIndex * frameWidth + margin,
+			y: 0,
+			width: frameWidth - margin * 2,
+			height: this.originalHeight,
+		};
+
+		const cropperOptions = {
+			viewMode: 2,
+			dragMode: 'crop',
+			aspectRatio: NaN,
+			autoCropArea: 1,
+
+			restore: false,
+			guides: true,
+			center: true,
+			highlight: true,
+			cropBoxMovable: true,
+			cropBoxResizable: true,
+			toggleDragModeOnDblclick: true,
+			background: true,
+			modal: true,
+			minContainerWidth: 500,
+			minContainerHeight: 500,
+			data: initialCrop, // Set initial crop area
+			ready: (event) => {
+				console.log('Cropper is ready');
+				// Initialize dimensions display
+				const dimensions = document.getElementById('cropDimensions');
+				if (dimensions) {
+					const { width, height } = this.cropper.getData();
+					dimensions.textContent = `${Math.round(width)}px x ${Math.round(
+						height
+					)}px`;
+				}
+			},
+			crop: (event) => {
+				// Validate crop data
+				const { width, height, x, y } = event.detail;
+				if (
+					width <= 0 ||
+					height <= 0 ||
+					x < 0 ||
+					y < 0 ||
+					x + width > this.originalWidth ||
+					y + height > this.originalHeight
+				) {
+					this.cropper.setData(initialCrop);
+					return;
+				}
+
+				// Enable reset button when crop box is modified
+				const resetButton = document.getElementById('resetCrop');
+				resetButton.disabled = false;
+				resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+				// Update dimensions immediately when crop box changes
+				this.updateDimensions();
+			},
+			cropstart: () => {
+				this.updateDimensions();
+			},
+			cropmove: () => {
+				this.updateDimensions();
+			},
+			cropend: () => {
+				this.updateDimensions();
+			},
+		};
+
+		this.cropper = window.Cropper.new(img, cropperOptions);
+		console.log('Cropper initialized:', this.cropper);
 	}
 
 	async showFrameEditor(frameIndex) {
 		console.log('Opening editor for frame:', frameIndex);
 		const editor = document.getElementById('frameEditor');
-		const cropContainer = document.querySelector('.crop-container');
+		const cropContainer = editor.querySelector('.crop-container');
+
+		if (!editor || !cropContainer) {
+			console.error('Editor elements not found');
+			return;
+		}
+
 		this.currentEditingFrame = frameIndex;
 
 		try {
-			const frameBuffer = this.frames[frameIndex];
+			// Use original image buffer instead of frame buffer
+			const originalBuffer = this.originalFrames[0]; // Original full image
 
 			// Create image element for cropper
 			const img = document.createElement('img');
-			const chunks = this.chunkArray(frameBuffer, 32768);
+			img.className = 'max-w-full max-h-[80vh] object-contain';
+
+			// Convert original image to base64
+			const chunks = this.chunkArray(originalBuffer, 32768);
 			let binary = '';
 			chunks.forEach((chunk) => {
 				binary += String.fromCharCode.apply(null, chunk);
@@ -640,79 +810,108 @@ class Reto3DProcessor {
 			const base64 = btoa(binary);
 			img.src = `data:image/png;base64,${base64}`;
 
-			// Replace canvas with image
+			// Make editor visible
+			editor.classList.remove('hidden');
+			editor.offsetHeight;
+			editor.classList.remove('opacity-0');
+
+			// Clear existing content and add new image
 			cropContainer.innerHTML = '';
 			cropContainer.appendChild(img);
 
-			// Initialize cropper
-			if (this.cropper) {
-				this.cropper.destroy();
-			}
-
-			// Initialize Cropper directly instead of using create method
-			this.cropper = window.Cropper.new(img, {
-				viewMode: 2,
-				dragMode: 'crop',
-				aspectRatio: NaN,
-				autoCropArea: 1,
-				restore: false,
-				guides: true,
-				center: true,
-				highlight: true,
-				cropBoxMovable: true,
-				cropBoxResizable: true,
-				toggleDragModeOnDblclick: true,
-				ready: () => {
-					console.log('Cropper is ready');
-				},
+			// Wait for image to load before proceeding
+			await new Promise((resolve, reject) => {
+				img.onload = resolve;
+				img.onerror = reject;
 			});
 
-			// Show editor with fade
-			editor.classList.remove('hidden');
-			// Force reflow
-			editor.offsetHeight;
-			editor.classList.add('opacity-100');
+			// Cleanup existing cropper
+			if (this.cropper) {
+				this.cropper.destroy();
+				this.cropper = null;
+			}
+
+			// Initialize Cropper with the frame boundaries
+			this.initializeCropper(img, frameIndex);
 		} catch (error) {
 			console.error('Error showing frame editor:', error);
+			console.error('Error stack:', error.stack);
 			alert('Error opening editor: ' + error.message);
+			this.hideFrameEditor();
 		}
 	}
 
+	hideFrameEditor() {
+		const editor = document.getElementById('frameEditor');
+		if (!editor) return;
+
+		// Fade out
+		editor.classList.add('opacity-0');
+
+		// Wait for transition to complete
+		setTimeout(() => {
+			editor.classList.add('hidden');
+			// Cleanup cropper
+			if (this.cropper) {
+				this.cropper.destroy();
+				this.cropper = null;
+			}
+			this.currentEditingFrame = -1;
+		}, 300); // Match your transition duration
+	}
+
+	// Modify the applyFrameEdits method to handle the crop correctly
 	async applyFrameEdits() {
 		if (this.currentEditingFrame < 0 || !this.cropper) return;
 
 		try {
-			const frameBuffer = this.frames[this.currentEditingFrame];
 			const cropData = this.cropper.getData(true); // true for rounded values
 
+			// Validate crop data
+			if (
+				cropData.width <= 0 ||
+				cropData.height <= 0 ||
+				cropData.x < 0 ||
+				cropData.y < 0 ||
+				cropData.x + cropData.width > this.originalWidth ||
+				cropData.y + cropData.height > this.originalHeight
+			) {
+				throw new Error('Invalid crop dimensions');
+			}
+
 			const cropParams = {
-				left: cropData.x,
-				top: cropData.y,
-				width: cropData.width,
-				height: cropData.height,
+				left: Math.round(cropData.x),
+				top: Math.round(cropData.y),
+				width: Math.round(cropData.width),
+				height: Math.round(cropData.height),
 			};
 
 			console.log('Crop data:', cropData);
 			console.log('Applying crop with params:', cropParams);
 
+			// Start fade out before processing
+			const editor = document.getElementById('frameEditor');
+			editor.classList.add('opacity-0');
+
+			// Wait for fade out
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			// Use the original image buffer for cropping
 			const editedBuffer = await window.electronAPI.editFrame(
-				frameBuffer,
+				this.originalFrames[0], // Use original image
 				cropParams
 			);
 
 			// Update the frame and display
 			this.frames[this.currentEditingFrame] = editedBuffer;
-			await this.displayFrames();
 
-			// Close editor and cleanup
-			const editor = document.getElementById('frameEditor');
-			editor.classList.remove('opacity-100');
-			setTimeout(() => {
-				editor.classList.add('hidden');
-			}, 300);
+			// Hide editor before updating frames to prevent flicker
+			editor.classList.add('hidden');
 			this.cropper.destroy();
 			this.cropper = null;
 			this.currentEditingFrame = -1;
+
+			await this.displayFrames();
 		} catch (error) {
 			console.error('Error applying frame edits:', error);
 			alert('Error applying edits: ' + error.message);
@@ -874,6 +1073,67 @@ class Reto3DProcessor {
 			console.error('Error updating GIF speed:', error);
 			alert(`Error updating GIF speed: ${error.message}`);
 		}
+	}
+
+	updateDimensions() {
+		const dimensions = document.getElementById('cropDimensions');
+		if (dimensions && this.cropper) {
+			const data = this.cropper.getData(true); // true for rounded values
+			dimensions.textContent = `${Math.round(data.width)}px x ${Math.round(
+				data.height
+			)}px`;
+		}
+	}
+
+	setupResetButton() {
+		const resetButton = document.getElementById('resetButton');
+
+		resetButton.addEventListener('click', () => {
+			// Show confirmation dialog
+			if (
+				confirm(
+					'Are you sure you want to reset? This will clear all current progress.'
+				)
+			) {
+				this.resetProcessor();
+			}
+		});
+	}
+
+	resetProcessor() {
+		// Reset all state
+		this.frames = [];
+		this.originalFrames = [];
+		this.currentGifBuffer = null;
+		this.originalFilePath = null;
+		this.originalWidth = null;
+		this.originalHeight = null;
+
+		// Clear UI and start fade animations simultaneously
+		document.getElementById('originalImage').src = '';
+		document.getElementById('frameImages').innerHTML = '';
+		document.getElementById('processButton').disabled = true;
+
+		// Reset file input value
+		const fileInput = document.getElementById('fileInput');
+		fileInput.value = '';
+
+		// Start all fade-outs simultaneously
+		this.hideImageContent();
+		this.hideOutputModal();
+
+		// Show upload zone with fade
+		requestAnimationFrame(() => {
+			this.showUploadZone();
+		});
+
+		// Hide reset button with animation
+		const resetButton = document.getElementById('resetButton');
+
+		resetButton.classList.add('opacity-0');
+		requestAnimationFrame(() => {
+			resetButton.classList.add('hidden');
+		});
 	}
 }
 

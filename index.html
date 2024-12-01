@@ -4,9 +4,9 @@
 		<title>Stitchy</title>
 		<meta
 			http-equiv="Content-Security-Policy"
-			content="default-src 'self'; img-src 'self' data: blob:; script-src 'self';" />
+			content="default-src 'self'; img-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+		<link rel="stylesheet" href="node_modules/cropperjs/dist/cropper.min.css" />
 		<link rel="stylesheet" href="styles/output.css" />
-		<link rel="stylesheet" href="node_modules/cropperjs/dist/cropper.css" />
 	</head>
 	<body class="bg-neutral-950 min-h-screen p-8">
 		<div class="container mx-auto max-w-6xl">
@@ -17,15 +17,22 @@
 				<p class="text-sm font-medium"></p>
 			</div>
 
-			<h1 class="text-white text-3xl font-bold text-center mb-8">Stitchy</h1>
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="text-white text-3xl font-bold">Stitchy</h1>
+				<button
+					id="resetButton"
+					class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-300 hidden opacity-0">
+					Reset
+				</button>
+			</div>
 
 			<div class="min-h-[calc(100vh-8rem)] flex flex-col">
 				<div class="upload-section">
-					<div id="dropZone" class="drop-zone">
+					<div id="dropZone" class="drop-zone group">
 						<p class="text-gray-500">Drop your scan here or</p>
 						<button
 							id="selectButton"
-							class="mt-2 text-blue-500 hover:text-blue-900">
+							class="mt-2 text-blue-500 group-hover:text-blue-900 pointer-events-none">
 							Select File
 						</button>
 						<input
@@ -38,7 +45,7 @@
 
 				<div
 					id="uploadSpinner"
-					class="hidden opacity-0 transition-opacity duration-300 flex justify-center items-center p-4">
+					class="hidden opacity-0 transition-opacity duration-300 fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm z-50">
 					<div role="status">
 						<svg
 							aria-hidden="true"
@@ -82,20 +89,42 @@
 								</h3>
 								<div id="frameImages" class="frame-images"></div>
 							</div>
+						</div>
+						<div id="frameEditor" class="frame-editor hidden">
 							<div
-								id="frameEditor"
-								class="frame-editor"
-								style="display: none">
-								<div class="editor-container">
-									<div class="crop-container">
+								class="relative w-full h-full flex items-center justify-center p-4">
+								<div
+									class="overlay-controls absolute top-4 right-4 flex gap-2 z-10">
+									<div
+										class="text-white text-sm bg-neutral-900/80 px-3 py-1 rounded-md">
+										<span id="cropDimensions">0 x 0</span>
+									</div>
+								</div>
+								<div
+									class="editor-container bg-neutral-900 rounded-lg overflow-hidden max-w-7xl w-full mx-auto">
+									<div class="crop-container relative w-full h-[80vh]">
 										<!-- Cropper.js will handle the content -->
 									</div>
-									<div class="editor-controls">
-										<button id="applyEdits" class="px-6">
+									<div
+										class="editor-controls absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4">
+										<button
+											id="applyEdits"
+											class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md">
 											Apply
 										</button>
-										<button id="resetCrop" class="px-6">Reset</button>
-										<button id="cancelEdits" class="px-6">
+										<button
+											id="resetCrop"
+											class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md">
+											Reset Crop
+										</button>
+										<button
+											id="resetToOriginal"
+											class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md">
+											Reset to Original
+										</button>
+										<button
+											id="cancelEdits"
+											class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md">
 											Cancel
 										</button>
 									</div>
@@ -107,7 +136,7 @@
 					<div class="controls">
 						<button
 							id="processButton"
-							class="w-full text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium rounded-md text-sm px-5 py-4 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+							class="mt-4 w-full text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium rounded-md text-sm px-5 py-4 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
 							disabled>
 							Create GIF
 						</button>
@@ -170,7 +199,8 @@
 										2x
 									</button>
 								</div>
-								<div class="save-buttons">
+								<div
+									class="save-buttons flex justify-between items-center">
 									<div class="inline-flex rounded-lg shadow-sm">
 										<button
 											id="saveButton"
@@ -208,6 +238,13 @@
 											</div>
 										</div>
 									</div>
+
+									<button
+										id="uploadAnotherButton"
+										type="button"
+										class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200">
+										Upload Another
+									</button>
 								</div>
 							</div>
 						</div>

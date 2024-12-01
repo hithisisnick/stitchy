@@ -56,7 +56,7 @@
 
 /* Custom styles that need to be preserved */
 .upload-section {
-	@apply flex-1 flex items-center justify-center transition-all duration-500 ease-out;
+	@apply flex-1 flex items-center justify-center transition-all duration-200 ease-out;
 }
 
 .drop-zone {
@@ -79,13 +79,13 @@
 }
 
 #imageContent {
-	@apply transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)];
+	@apply transition-all duration-200 ease-out;
 }
 
 #originalPreviewCard,
 #framesPreviewCard,
 #settingsCard {
-	@apply transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)];
+	@apply transition-all duration-200 ease-out;
 }
 
 .frames-container {
@@ -108,59 +108,154 @@
 	@apply mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors;
 }
 
-.frame-editor {
-	@apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300;
+@layer components {
+	.frame-editor {
+		@apply fixed inset-0 bg-black/90 z-50 transition-opacity duration-300 flex items-center justify-center;
+	}
+
+	.crop-container {
+		@apply relative w-full h-[80vh] bg-neutral-800;
+	}
+
+	.crop-container img {
+		@apply max-h-full max-w-full;
+	}
+
+	/* Cropper.js overrides */
+
+	.editor-controls button {
+		@apply px-4 py-2 rounded-md bg-neutral-600 text-white hover:bg-neutral-700 transition-colors;
+	}
+
+	/* Cropper enhancements */
+	.cropper-grid {
+		@apply opacity-50;
+	}
+
+	.cropper-grid-dashed {
+		@apply border-white/20;
+	}
+
+	/* Dimension display */
+	.dimension-overlay {
+		@apply absolute top-0 left-0 bg-white/10 pointer-events-none;
+		transform-origin: top left;
+	}
+
+	/* Frame overlay styles */
+	.frame-overlay {
+		@apply absolute top-0 left-0 w-full h-full object-contain opacity-30 transition-opacity duration-300;
+		mix-blend-mode: difference;
+	}
+
+	/* Add controls for overlay visibility */
+	.overlay-controls {
+		@apply absolute top-4 right-4 flex items-center gap-2 bg-neutral-800/80 p-2 rounded-md backdrop-blur-sm;
+	}
+
+	/* Dimension display */
+	#cropDimensions {
+		@apply font-mono; /* Use monospace font for better number alignment */
+	}
+
+	.overlay-controls select {
+		@apply bg-neutral-700 text-white rounded-md text-sm px-2 py-1 hover:bg-neutral-600 transition-colors cursor-pointer;
+	}
+
+	.overlay-controls input[type='range'] {
+		@apply h-[6px] rounded-full bg-neutral-600;
+		&::-webkit-slider-thumb {
+			@apply w-3 h-3 rounded-full bg-neutral-400 hover:bg-neutral-300 transition-colors;
+		}
+	}
+
+	/* Add these Cropper.js custom styles */
+	.cropper-view-box {
+		outline: none !important;
+		border-radius: 0 !important;
+	}
+
+	.cropper-line,
+	.cropper-point,
+	.cropper-face {
+		@apply bg-neutral-400/50;
+	}
+
+	.cropper-view-box {
+		@apply outline-none;
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+	}
+
+	.cropper-modal {
+		@apply bg-black/70;
+	}
+
+	.cropper-dashed {
+		@apply border-neutral-400/30;
+	}
+
+	/* Hide the white background */
+	.cropper-face {
+		background-color: transparent !important;
+	}
+
+	/* Make the corner handles more visible on dark background */
+	.cropper-point {
+		@apply bg-white/50 hover:bg-white/80;
+		width: 8px !important;
+		height: 8px !important;
+	}
+
+	.cropper-point.point-n,
+	.cropper-point.point-s,
+	.cropper-point.point-e,
+	.cropper-point.point-w {
+		width: 8px !important;
+		height: 8px !important;
+	}
 }
 
-.editor-container {
-	@apply bg-neutral-900 p-4 rounded-lg w-[95vw] md:w-[90vw] lg:w-[80vw] max-h-[90vh] overflow-auto mx-auto;
+/* Add these transitions for the reset button */
+#resetButton {
+	@apply transition-all duration-200 ease-out;
 }
 
-.crop-container {
-	@apply relative w-full max-h-[70vh] overflow-hidden mb-4;
+/* Update these Cropper.js custom styles */
+.cropper-line {
+	@apply bg-blue-400/70;
+	width: 2px !important;
 }
 
-.crop-container img {
-	@apply max-h-[65vh] object-contain mx-auto;
+.cropper-point {
+	@apply bg-blue-400/80 hover:bg-blue-300;
+	width: 14px !important;
+	height: 14px !important;
+	opacity: 1 !important;
 }
 
-.cropper-container {
-	@apply max-h-[65vh] !important;
+.cropper-point.point-n,
+.cropper-point.point-s,
+.cropper-point.point-e,
+.cropper-point.point-w {
+	width: 14px !important;
+	height: 14px !important;
 }
 
-.editor-controls {
-	@apply flex gap-2 justify-end;
+.cropper-view-box {
+	outline: none !important;
+	border-radius: 0 !important;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7) !important;
 }
 
-.editor-controls button {
-	@apply px-4 py-2 rounded transition-colors;
+.cropper-face {
+	background-color: transparent !important;
 }
 
-#applyEdits {
-	@apply bg-green-500 text-white hover:bg-green-600;
+.cropper-modal {
+	@apply bg-black/80;
 }
 
-#resetCrop {
-	@apply bg-yellow-500 text-white hover:bg-yellow-600;
-}
-
-#cancelEdits {
-	@apply bg-red-500 text-white hover:bg-red-600;
-}
-
-.controls {
-	@apply mt-8 space-y-4;
-}
-
-.output-section {
-	@apply mt-8;
-}
-
-.save-buttons {
-	@apply mt-4 flex justify-end;
-}
-
-#saveDropdownMenu {
-	@apply absolute right-0 z-10 w-44 origin-top-right bg-white rounded-lg shadow-lg 
-	ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-green-800;
+.cropper-dashed {
+	@apply border-blue-400/60;
+	border-width: 2px !important;
 }

@@ -96,6 +96,8 @@ app.whenReady().then(() => {
 				metadata: {
 					width: frameWidth - margin * 2, // Adjust width to account for margins
 					height: metadata.height,
+					originalWidth: metadata.width,
+					originalHeight: metadata.height,
 				},
 			};
 		} catch (error) {
@@ -312,14 +314,21 @@ process.on('uncaughtException', (error) => {
 ipcMain.handle('edit-frame', async (event, frameBuffer, crop) => {
 	try {
 		const buffer = Buffer.from(frameBuffer);
-		const editedBuffer = await sharp(buffer)
-			.extract({
-				left: crop.left,
-				top: crop.top,
-				width: crop.width,
-				height: crop.height,
-			})
-			.toBuffer();
+
+		// Ensure crop parameters are valid
+		const image = sharp(buffer);
+		const metadata = await image.metadata();
+
+		const validCrop = {
+			left: Math.max(0, Math.min(crop.left, metadata.width - 1)),
+			top: Math.max(0, Math.min(crop.top, metadata.height - 1)),
+			width: Math.min(crop.width, metadata.width - crop.left),
+			height: Math.min(crop.height, metadata.height - crop.top),
+		};
+
+		console.log('Applying crop:', validCrop);
+
+		const editedBuffer = await image.extract(validCrop).toBuffer();
 
 		return Array.from(editedBuffer);
 	} catch (error) {

@@ -30,14 +30,33 @@ const electronAPI = {
 // Create a proper constructor wrapper for Cropper that includes all necessary methods
 contextBridge.exposeInMainWorld('Cropper', {
 	new: (element, options) => {
-		const cropper = new CropperClass(element, options);
-		// Return a proxy object that includes all the methods we need
-		return {
-			destroy: () => cropper.destroy(),
-			getData: (rounded) => cropper.getData(rounded),
-			reset: () => cropper.reset(),
-			// Add any other methods you need here
-		};
+		try {
+			console.log('Creating new Cropper instance with element:', element);
+			console.log('Cropper options:', options);
+			const cropper = new CropperClass(element, options);
+			console.log('Cropper instance created:', cropper);
+			// Return a proxy object that includes all the methods we need
+			return {
+				destroy: () => cropper.destroy(),
+				getData: (rounded) => cropper.getData(rounded),
+				reset: () => cropper.reset(),
+				getCroppedCanvas: () => cropper.getCroppedCanvas(),
+				setData: (data) => cropper.setData(data),
+
+				clear: () => cropper.clear(),
+				on: (event, callback) => cropper.on(event, callback),
+				getContainerData: () => cropper.getContainerData(),
+				getCanvasData: () => cropper.getCanvasData(),
+				addEventListener: (event, callback) =>
+					cropper.addEventListener(event, callback),
+				removeEventListener: (event, callback) =>
+					cropper.removeEventListener(event, callback),
+				cropMove: (callback) => cropper.on('cropmove', callback),
+			};
+		} catch (error) {
+			console.error('Error creating Cropper instance:', error);
+			throw error;
+		}
 	},
 });
 
